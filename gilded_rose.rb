@@ -2,10 +2,15 @@ require './item.rb'
 
 class GildedRose
 
+  attr_reader :items
   @items = []
 
-  def initialize
-    @items = []
+  def item_by_name(name)
+    items.detect{|i| i.name == name}
+  end
+
+  def initialize(items = [])
+    @items = items
     @items << Item.new("+5 Dexterity Vest", 10, 20)
     @items << Item.new("Aged Brie", 2, 0)
     @items << Item.new("Elixir of the Mongoose", 5, 7)
@@ -15,52 +20,40 @@ class GildedRose
   end
 
   def update_quality
+    items.each { |item| update item }
+  end
 
-    for i in 0..(@items.size-1)
-      if (@items[i].name != "Aged Brie" && @items[i].name != "Backstage passes to a TAFKAL80ETC concert")
-        if (@items[i].quality > 0)
-          if (@items[i].name != "Sulfuras, Hand of Ragnaros")
-            @items[i].quality = @items[i].quality - 1
-          end
-        end
-      else
-        if (@items[i].quality < 50)
-          @items[i].quality = @items[i].quality + 1
-          if (@items[i].name == "Backstage passes to a TAFKAL80ETC concert")
-            if (@items[i].sell_in < 11)
-              if (@items[i].quality < 50)
-                @items[i].quality = @items[i].quality + 1
-              end
-            end
-            if (@items[i].sell_in < 6)
-              if (@items[i].quality < 50)
-                @items[i].quality = @items[i].quality + 1
-              end
-            end
-          end
-        end
-      end
-      if (@items[i].name != "Sulfuras, Hand of Ragnaros")
-        @items[i].sell_in = @items[i].sell_in - 1;
-      end
-      if (@items[i].sell_in < 0)
-        if (@items[i].name != "Aged Brie")
-          if (@items[i].name != "Backstage passes to a TAFKAL80ETC concert")
-            if (@items[i].quality > 0)
-              if (@items[i].name != "Sulfuras, Hand of Ragnaros")
-                @items[i].quality = @items[i].quality - 1
-              end
-            end
-          else
-            @items[i].quality = @items[i].quality - @items[i].quality
-          end
-        else
-          if (@items[i].quality < 50)
-            @items[i].quality = @items[i].quality + 1
-          end
-        end
-      end
-    end
+  private
+  def update item
+    strategy_for(item.name).call item
+  end
+
+  def strategy_for item_name
+    updators = {
+      "Aged Brie" => method(:update_aged_brie),
+      "Sulfuras, Hand of Ragnaros" => proc {},
+      "Backstage passes to a TAFKAL80ETC concert" => method(:update_ticket), 
+    }
+    updators.fetch(item_name, method(:normal_strategy))
+  end
+
+  def update_aged_brie item
+    item.quality = [50, item.quality + 1].min
+    item.sell_in -= 1
+  end
+
+ def normal_strategy item
+    item.quality = [0, item.quality - 1].max
+    item.sell_in -= 1
+  end
+
+  def update_ticket item
+    item.sell_in < 11 && item.quality += 1
+    item.sell_in < 6  && item.quality += 1
+
+    item.quality = [50, item.quality + 1].min
+    item.sell_in = item.sell_in - 1
+    item.sell_in < 0 && item.quality = 0
   end
 
 end

@@ -1,7 +1,10 @@
 # A sample Guardfile
 # More info at https://github.com/guard/guard#readme
 
+notification :terminal_notifier_guard
+
 guard :rspec do
+  watch(%r{^gilded_rose\.rb}) { "spec" }
   watch(%r{^spec/.+_spec\.rb$})
   watch(%r{^lib/(.+)\.rb$})     { |m| "spec/lib/#{m[1]}_spec.rb" }
   watch('spec/spec_helper.rb')  { "spec" }
